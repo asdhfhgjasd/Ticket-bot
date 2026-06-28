@@ -6,7 +6,7 @@ const {
 } = require("discord.js");
 
 const CONFIG = {
-  TOKEN: TOKEN: process.env.TOKEN,
+  TOKEN: process.env.TOKEN,
   AUTO_ROLE_ID: "1520644536647286956",
   EMBED_COLOR: 0x9b59b6,
 };
