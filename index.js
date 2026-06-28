@@ -3,230 +3,125 @@ const {
   GatewayIntentBits,
   Partials,
   EmbedBuilder,
-  ActionRowBuilder,
-  StringSelectMenuBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ChannelType,
-  PermissionFlagsBits,
 } = require("discord.js");
 
-// ─── CONFIG ────────────────────────────────────────────────────────────────────
 const CONFIG = {
-TOKEN: process.env.TOKEN,
-  GUILD_ID: "1520242100426506250",
-  SUPPORT_PANEL_CHANNEL: "1520245777350525028",
-  TICKET_CATEGORY: "1520245777350525028",
-  STAFF_ROLE_ID: "1520248061467689070",
+  TOKEN: TOKEN: process.env.TOKEN,
+  AUTO_ROLE_ID: "1520644536647286956",
+  EMBED_COLOR: 0x9b59b6,
 };
-// ───────────────────────────────────────────────────────────────────────────────
-
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
   ],
   partials: [Partials.Channel],
 });
 
-// ─── TICKET CATEGORIES ─────────────────────────────────────────────────────────
-const TICKET_CATEGORIES = [
-  {
-    value: "make_a_purchase",
-    label: "Make a Purchase",
-    description: "Buy products & complete your order",
-    emoji: "🛒",
-  },
-  {
-    value: "tweak_issue",
-    label: "Tweak Issue",
-    description: "Problems or disputes with your tweak order",
-    emoji: "🔧",
-  },
-  {
-    value: "report_member",
-    label: "Report Member",
-    description: "Report misconduct or rule violations",
-    emoji: "🚨",
-  },
-  {
-    value: "general_support",
-    label: "General Support",
-    description: "All other enquiries & questions",
-    emoji: "💬",
-  },
-];
+const awaitingInput = new Map();
 
-// ─── READY ─────────────────────────────────────────────────────────────────────
-client.once("ready", () => {
+client.once("clientReady", () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
-  console.log(`📋 Type !sendpanel in your panel channel to post the support embed.`);
 });
 
-// ─── SEND PANEL COMMAND ────────────────────────────────────────────────────────
+// ─── AUTO ROLE ON JOIN ─────────────────────────────────────────────────────────
+client.on("guildMemberAdd", async (member) => {
+  try {
+    const role = member.guild.roles.cache.get(CONFIG.AUTO_ROLE_ID);
+    if (!role) return console.log("❌ Auto role not found!");
+    await member.roles.add(role);
+    console.log(`✅ Gave role to ${member.user.tag}`);
+  } catch (error) {
+    console.error("Error giving auto role:", error);
+  }
+});
+
+// ─── EMBED CREATOR ─────────────────────────────────────────────────────────────
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-  if (message.content !== "!sendpanel") return;
-  if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-    return message.reply("❌ You need Administrator permission to use this.");
-  }
 
-  await message.delete().catch(() => {});
-  await sendSupportPanel(message.channel);
-});
-
-// ─── SEND THE SUPPORT PANEL ────────────────────────────────────────────────────
-async function sendSupportPanel(channel) {
-  const embed = new EmbedBuilder()
-    .setTitle("Aphrodite Services — Support")
-    .setDescription(
-      "Welcome. If you require assistance, please select the appropriate category below to open a private support ticket.\n\nA member of our team will be with you shortly."
-    )
-    .addFields(
-      { name: "🛒 Make a Purchase", value: "Buy products & complete your order", inline: true },
-      { name: "🔧 Tweak Issue", value: "Problems or disputes with your order", inline: true },
-      { name: "🚨 Report Member", value: "Report misconduct or rule violations", inline: true },
-      { name: "💬 General Support", value: "All other enquiries & questions", inline: true }
-    )
-    .setFooter({ text: "Aphrodite Services • Support System" })
-    .setColor(0x9b59b6)
-    .setTimestamp();
-
-  const selectMenu = new StringSelectMenuBuilder()
-    .setCustomId("ticket_category_select")
-    .setPlaceholder("Select a support category...")
-    .addOptions(
-      TICKET_CATEGORIES.map((cat) => ({
-        label: cat.label,
-        description: cat.description,
-        value: cat.value,
-        emoji: cat.emoji,
-      }))
-    );
-
-  const row = new ActionRowBuilder().addComponents(selectMenu);
-  await channel.send({ embeds: [embed], components: [row] });
-}
-
-// ─── HANDLE INTERACTIONS ───────────────────────────────────────────────────────
-client.on("interactionCreate", async (interaction) => {
-
-  // ── Dropdown: open ticket ──
-  if (interaction.isStringSelectMenu() && interaction.customId === "ticket_category_select") {
-    await interaction.deferReply({ ephemeral: true });
-
-    const selected = TICKET_CATEGORIES.find((c) => c.value === interaction.values[0]);
-    const guild = interaction.guild;
-    const member = interaction.member;
-
-    const existingChannel = guild.channels.cache.find(
-      (ch) =>
-        ch.name === `ticket-${interaction.values[0].replace(/_/g, "-")}-${member.id}` &&
-        ch.parentId === CONFIG.TICKET_CATEGORY
-    );
-
-    if (existingChannel) {
-      return interaction.editReply({
-        content: `❌ You already have an open ticket for **${selected.label}**: ${existingChannel}`,
-      });
+  if (message.content === "!type") {
+    if (!message.member.permissions.has("ManageMessages")) {
+      return message.reply("❌ You don't have permission to use this command.");
     }
 
-    const ticketChannel = await guild.channels.create({
-      name: `ticket-${interaction.values[0].replace(/_/g, "-")}-${member.id}`,
-      type: ChannelType.GuildText,
-      parent: CONFIG.TICKET_CATEGORY,
-      permissionOverwrites: [
-        { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-        {
-          id: member.id,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.ReadMessageHistory,
-            PermissionFlagsBits.AttachFiles,
-          ],
-        },
-        {
-          id: CONFIG.STAFF_ROLE_ID,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.ReadMessageHistory,
-            PermissionFlagsBits.AttachFiles,
-            PermissionFlagsBits.ManageMessages,
-          ],
-        },
-      ],
+    awaitingInput.set(message.author.id, {
+      channelId: message.channel.id,
+      step: "title",
     });
 
-    const ticketEmbed = new EmbedBuilder()
-      .setTitle(`${selected.emoji} ${selected.label}`)
-      .setDescription(
-        `Hello ${member}, thank you for opening a ticket.\n\n**Category:** ${selected.label}\n**Description:** ${selected.description}\n\nA member of our team will be with you shortly. Please describe your issue below.`
-      )
-      .setColor(0x9b59b6)
-      .setFooter({ text: "Aphrodite Services • Support System" })
-      .setTimestamp();
-
-    const closeButton = new ButtonBuilder()
-      .setCustomId(`close_ticket_${ticketChannel.id}`)
-      .setLabel("Close Ticket")
-      .setEmoji("🔒")
-      .setStyle(ButtonStyle.Danger);
-
-    const claimButton = new ButtonBuilder()
-      .setCustomId(`claim_ticket_${ticketChannel.id}`)
-      .setLabel("Claim Ticket")
-      .setEmoji("✋")
-      .setStyle(ButtonStyle.Success);
-
-    const buttonRow = new ActionRowBuilder().addComponents(claimButton, closeButton);
-
-    await ticketChannel.send({
-      content: `${member} | <@&${CONFIG.STAFF_ROLE_ID}>`,
-      embeds: [ticketEmbed],
-      components: [buttonRow],
-    });
-
-    await interaction.editReply({ content: `✅ Your ticket has been created: ${ticketChannel}` });
+    await message.reply(
+      "📝 **Embed Creator**\n\nWhat should the **title** of the embed be?\n*(Type `skip` to leave it blank)*"
+    );
+    return;
   }
 
-  // ── Button: Close ticket ──
-  if (interaction.isButton() && interaction.customId.startsWith("close_ticket_")) {
-    await interaction.deferReply();
+  if (awaitingInput.has(message.author.id)) {
+    const session = awaitingInput.get(message.author.id);
+    if (message.channel.id !== session.channelId) return;
 
-    const closeEmbed = new EmbedBuilder()
-      .setTitle("🔒 Ticket Closing")
-      .setDescription(`This ticket will be deleted in **5 seconds**.\nClosed by: ${interaction.member}`)
-      .setColor(0xe74c3c)
-      .setTimestamp();
+    if (session.step === "title") {
+      session.title = message.content === "skip" ? null : message.content;
+      session.step = "description";
+      awaitingInput.set(message.author.id, session);
+      await message.reply(
+        "✏️ Now type the **description** (main text) of your embed:\n*(You can use Discord markdown like **bold**, *italic*, etc)*"
+      );
+      return;
+    }
 
-    await interaction.editReply({ embeds: [closeEmbed] });
-    setTimeout(() => { interaction.channel.delete().catch(() => {}); }, 5000);
+    if (session.step === "description") {
+      session.description = message.content;
+      session.step = "color";
+      awaitingInput.set(message.author.id, session);
+      await message.reply(
+        "🎨 What **color** do you want the embed?\n\nType one of: `purple`, `blue`, `red`, `green`, `yellow`, `pink`, `white`\n*(Or type `skip` for default purple)*"
+      );
+      return;
+    }
+
+    if (session.step === "color") {
+      const colors = {
+        purple: 0x9b59b6,
+        blue: 0x3498db,
+        red: 0xe74c3c,
+        green: 0x2ecc71,
+        yellow: 0xf1c40f,
+        pink: 0xff69b4,
+        white: 0xffffff,
+        skip: 0x9b59b6,
+      };
+      session.color = colors[message.content.toLowerCase()] || 0x9b59b6;
+      session.step = "footer";
+      awaitingInput.set(message.author.id, session);
+      await message.reply(
+        "📌 Do you want a **footer** text?\n*(Type your footer text or `skip` to leave it blank)*"
+      );
+      return;
+    }
+
+    if (session.step === "footer") {
+      session.footer = message.content === "skip" ? null : message.content;
+
+      const embed = new EmbedBuilder().setColor(session.color);
+      if (session.title) embed.setTitle(session.title);
+      if (session.description) embed.setDescription(session.description);
+      if (session.footer) embed.setFooter({ text: session.footer });
+      embed.setTimestamp();
+
+      await message.channel.send({ embeds: [embed] });
+      await message.reply("✅ Embed sent!");
+      awaitingInput.delete(message.author.id);
+      return;
+    }
   }
 
-  // ── Button: Claim ticket ──
-  if (interaction.isButton() && interaction.customId.startsWith("claim_ticket_")) {
-    await interaction.reply({ content: `✅ This ticket has been claimed by ${interaction.member}!` });
-
-    const disabledClaim = new ButtonBuilder()
-      .setCustomId(`claimed_${interaction.customId}`)
-      .setLabel(`Claimed by ${interaction.member.displayName}`)
-      .setEmoji("✅")
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(true);
-
-    const closeButton = new ButtonBuilder()
-      .setCustomId(interaction.customId.replace("claim_", "close_"))
-      .setLabel("Close Ticket")
-      .setEmoji("🔒")
-      .setStyle(ButtonStyle.Danger);
-
-    const newRow = new ActionRowBuilder().addComponents(disabledClaim, closeButton);
-    await interaction.message.edit({ components: [newRow] });
+  if (message.content === "!cancel" && awaitingInput.has(message.author.id)) {
+    awaitingInput.delete(message.author.id);
+    await message.reply("❌ Embed creation cancelled.");
   }
 });
 
-// ─── LOGIN ─────────────────────────────────────────────────────────────────────
 client.login(CONFIG.TOKEN);
