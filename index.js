@@ -13,7 +13,7 @@ const {
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 const CONFIG = {
-  TOKEN: "TOKEN: process.env.TOKEN,",
+TOKEN: process.env.TOKEN,
   GUILD_ID: "1520242100426506250",
   SUPPORT_PANEL_CHANNEL: "1520245777350525028",
   TICKET_CATEGORY: "1520245777350525028",
