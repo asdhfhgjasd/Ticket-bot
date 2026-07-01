@@ -62,7 +62,7 @@ async function sendSupportPanel(channel) {
       { name: "💬 General Support", value: "All other enquiries & questions", inline: true }
     )
     .setFooter({ text: "Law Tweaks • Support System" })
-    .setColor(0x9b59b6)
+    .setColor(0x3498db)
     .setTimestamp();
 
   const selectMenu = new StringSelectMenuBuilder()
@@ -116,7 +116,7 @@ name: `ticket-${Math.floor(Math.random() * 9000) + 1000}`,
       const ticketEmbed = new EmbedBuilder()
         .setTitle(`${selected.emoji} ${selected.label}`)
         .setDescription(`Hello ${member}, thank you for opening a ticket.\n\n**Category:** ${selected.label}\n**Description:** ${selected.description}\n\nA member of our team will be with you shortly. Please describe your issue below.`)
-        .setColor(0x9b59b6)
+        .setColor(0x3498db)
         .setFooter({ text: "Law Tweaks • Support System" })
         .setTimestamp();
 
