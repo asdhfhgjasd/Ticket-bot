@@ -53,7 +53,7 @@ client.on("messageCreate", async (message) => {
 
 async function sendSupportPanel(channel) {
   const embed = new EmbedBuilder()
-    .setTitle("Aphrodite Services — Support")
+    .setTitle("Law Tweaks — Support")
     .setDescription("Welcome. If you require assistance, please select the appropriate category below to open a private support ticket.\n\nA member of our team will be with you shortly.")
     .addFields(
       { name: "🛒 Make a Purchase", value: "Buy products & complete your order", inline: true },
