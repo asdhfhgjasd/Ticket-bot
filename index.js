@@ -61,7 +61,7 @@ async function sendSupportPanel(channel) {
       { name: "🚨 Report Member", value: "Report misconduct or rule violations", inline: true },
       { name: "💬 General Support", value: "All other enquiries & questions", inline: true }
     )
-    .setFooter({ text: "Aphrodite Services • Support System" })
+    .setFooter({ text: "Law Tweaks • Support System" })
     .setColor(0x9b59b6)
     .setTimestamp();
 
