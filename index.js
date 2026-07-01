@@ -117,7 +117,7 @@ name: `ticket-${Math.floor(Math.random() * 9000) + 1000}`,
         .setTitle(`${selected.emoji} ${selected.label}`)
         .setDescription(`Hello ${member}, thank you for opening a ticket.\n\n**Category:** ${selected.label}\n**Description:** ${selected.description}\n\nA member of our team will be with you shortly. Please describe your issue below.`)
         .setColor(0x9b59b6)
-        .setFooter({ text: "Aphrodite Services • Support System" })
+        .setFooter({ text: "Law Tweaks • Support System" })
         .setTimestamp();
 
       const closeButton = new ButtonBuilder()
